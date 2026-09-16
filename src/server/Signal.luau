@@ -2,14 +2,16 @@
 
 local FreeRunnerThread: thread? = nil
 
-local function AquireRunnerThread_andCallEventHandler(fn, ...)
+type Handler = (...any) -> ()
+
+local function AquireRunnerThread_andCallEventHandler(fn: Handler, ...: any)
 	local AquiredFreeRunnerThread = FreeRunnerThread
 	FreeRunnerThread = nil
 	fn(...)
 	FreeRunnerThread = AquiredFreeRunnerThread
 end
 
-local function RunEventHandler_InFreeThread(...)
+local function RunEventHandler_InFreeThread(...: any)
 	AquireRunnerThread_andCallEventHandler(...)
 	while true do
 		AquireRunnerThread_andCallEventHandler(coroutine.yield())
@@ -22,17 +24,17 @@ Connection.__index = Connection
 export type Connection = typeof(setmetatable(
 	{} :: {
 		_connected: boolean,
-		_fn: any,
+		_fn: Handler,
 		_signal: Signal,
 	},
 	Connection
 ))
 
-function Connection.new(Signal, fn)
+function Connection.new(signal: Signal, fn: Handler): Connection
 	return setmetatable({
 		_connected = true,
 		_fn = fn,
-		_signal = Signal,
+		_signal = signal,
 	}, Connection)
 end
 
@@ -58,7 +60,7 @@ export type Signal = typeof(setmetatable(
 	Signal
 ))
 
-function Signal.new()
+function Signal.new(): Signal
 	local self = setmetatable({
 		_Connections = {},
 	}, Signal)
@@ -80,7 +82,7 @@ function Signal.Fire(self: Signal, ...)
 	end
 end
 
-function Signal.Connect(self: Signal, fn)
+function Signal.Connect(self: Signal, fn: Handler): Connection
 	local connection = Connection.new(self, fn)
 	table.insert(self._Connections, connection)
 	return connection
