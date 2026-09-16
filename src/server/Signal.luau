@@ -1,3 +1,21 @@
+--!strict
+
+local FreeRunnerThread: thread? = nil
+
+local function AquireRunnerThread_andCallEventHandler(fn, ...)
+	local AquiredFreeRunnerThread = FreeRunnerThread
+	FreeRunnerThread = nil
+	fn(...)
+	FreeRunnerThread = AquiredFreeRunnerThread
+end
+
+local function RunEventHandler_InFreeThread(...)
+	AquireRunnerThread_andCallEventHandler(...)
+	while true do
+		AquireRunnerThread_andCallEventHandler(coroutine.yield())
+	end
+end
+
 local Connection = {}
 Connection.__index = Connection
 
@@ -35,7 +53,7 @@ Signal.__index = Signal
 
 export type Signal = typeof(setmetatable(
 	{} :: {
-		_Connections: {},
+		_Connections: { Connection },
 	},
 	Signal
 ))
@@ -51,7 +69,13 @@ function Signal.Fire(self: Signal, ...)
 	local _ConnectionsCopy = table.clone(self._Connections)
 	for _, connection: Connection in ipairs(_ConnectionsCopy) do
 		if connection._connected then
-			task.spawn(connection._fn, ...)
+			local runnerThread = FreeRunnerThread
+			if not runnerThread then
+				runnerThread = coroutine.create(RunEventHandler_InFreeThread)
+				FreeRunnerThread = runnerThread
+				coroutine.resume(runnerThread)
+			end
+			task.spawn(assert(runnerThread, "Signal runner thread was not initialized"), connection._fn, ...)
 		end
 	end
 end
@@ -66,7 +90,7 @@ function Signal.Wait(self: Signal)
 	local thread = coroutine.running()
 	local connection
 	connection = self:Connect(function(...)
-		connection:Disconnect()
+		Connection.Disconnect(assert(connection, "Signal connection was not initialized"))
 		task.spawn(thread, ...)
 	end)
 
@@ -75,7 +99,7 @@ end
 
 function Signal.DisconnectAll(self: Signal)
 	if self._Connections then
-		for _, connection: Connection in ipairs(self._Connections) do
+		for _, connection in ipairs(self._Connections :: { Connection }) do
 			connection._connected = false
 		end
 		table.clear(self._Connections)
@@ -85,4 +109,5 @@ end
 function Signal.Destroy(self: Signal)
 	self:DisconnectAll()
 end
+
 return Signal
