@@ -1,7 +1,8 @@
 [package]
-name = "devex/basicsignal"
-version = "0.1.0"
+name = "nrobloxs/basicsignal"
+version = "0.1.2"
 registry = "https://github.com/UpliftGames/wally-index"
 realm = "shared"
+description = "A lightweight, GoodSignal-style event/signal implementation for Roblox with thread pooling."
 
 [dependencies]
