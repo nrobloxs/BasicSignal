@@ -1,12 +1,6 @@
 {
   "name": "BasicSignal",
   "tree": {
-    "$className": "DataModel",
-
-    "ReplicatedStorage": {
-      "BasicSignal": {
-        "$path": "src"
-      }
-    }
+    "$path": "src"
   }
 }

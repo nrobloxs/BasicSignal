@@ -1,6 +1,6 @@
 [package]
 name = "nrobloxs/basicsignal"
-version = "0.1.5"
+version = "0.1.7"
 registry = "https://github.com/UpliftGames/wally-index"
 realm = "shared"
 description = "A lightweight, GoodSignal-style event/signal implementation for Roblox with thread pooling."
