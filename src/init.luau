@@ -71,13 +71,10 @@ function Signal.Fire(self: Signal, ...)
 	local _ConnectionsCopy = table.clone(self._Connections)
 	for _, connection: Connection in ipairs(_ConnectionsCopy) do
 		if connection._connected then
-			local runnerThread = FreeRunnerThread
-			if not runnerThread then
-				runnerThread = coroutine.create(RunEventHandler_InFreeThread)
-				FreeRunnerThread = runnerThread
-				coroutine.resume(runnerThread)
+			if not FreeRunnerThread then
+				FreeRunnerThread = coroutine.create(RunEventHandler_InFreeThread)
 			end
-			task.spawn(assert(runnerThread, "Signal runner thread was not initialized"), connection._fn, ...)
+			task.spawn(FreeRunnerThread :: thread, connection._fn, ...)
 		end
 	end
 end
